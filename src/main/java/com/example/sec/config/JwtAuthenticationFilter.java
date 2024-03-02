@@ -1,5 +1,7 @@
 package com.example.sec.config;
 
+import com.example.sec.service.JwtService;
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,28 +30,32 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        final String authHeader = request.getHeader("Authorization");
-        final String jwtToken;
-        final String userEmail;
-        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-        jwtToken = authHeader.substring(7);
-        userEmail = jwtService.extractUsername(jwtToken);
-        if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            if(jwtService.isTokenValid(jwtToken, userDetails)) {
-                UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.getAuthorities()
-                );
-                authenticationToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        try {
+            final String authHeader = request.getHeader("Authorization");
+            final String jwtToken;
+            final String userEmail;
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                filterChain.doFilter(request, response);
+                return;
             }
+            jwtToken = authHeader.substring(7);
+            userEmail = jwtService.extractUsername(jwtToken);
+            if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                if (jwtService.isTokenValid(jwtToken, userDetails)) {
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                    );
+                    authenticationToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                }
+            }
+        }catch (ExpiredJwtException e) {
+            System.out.println(e.getLocalizedMessage());
         }
         filterChain.doFilter(request, response);
     }

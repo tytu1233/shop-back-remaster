@@ -1,4 +1,4 @@
-package com.example.sec.config;
+package com.example.sec.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -19,6 +19,8 @@ public class JwtService {
 
     private static final String SECRET_KEY = "Gd22DUtB7BDY/1ssf5Pa0vpGwwee1cBxk0jjESAtzPjy6ngl+VUHugiwGIBy0s3wkCk7Aj8yosatqFNHy2nLBS66gr1nCU9H2+ot1PVK96jSnHaelaOVtJ2UHJpl1W/4KGCJlft1NCFbqdM+rkSWkgtjsxXihLs8lKthx1DBgwDTuoaEmryxfSNBNQ5UVt73iv6ZkIaqTE3NUwvK1Qi2FnuJDVv6RRnQqb9jE5KWsbTkWctGan7HQiWD31skxftPqxLCM7JONZO2WXI20ktQsbK5oGbI00El6gewW8MhQ19MOhPU69LTVS8LHb0Ku5vaWajE7ZXlif34n0h2HMN7BY+XneCTKUm4p9fjarauPcM=";
 
+    private static final long AccessTokenExpiration =  1000; // 1 day
+    private static final long RefreshTokenExpiration =  604800000; // 7 days
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
@@ -30,16 +32,27 @@ public class JwtService {
     public String generateToken(UserDetails userDetails) {
         return generateToken(new HashMap<>(), userDetails);
     }
-    public String generateToken(
+
+    public String generateToken(Map<String, Object> extraClaims,
+                                UserDetails userDetails) {
+        return buildToken(extraClaims, userDetails, AccessTokenExpiration);
+    }
+
+    public String generateRefreshToken(UserDetails userDetails) {
+        return buildToken(new HashMap<>(), userDetails, RefreshTokenExpiration);
+    }
+
+    public String buildToken(
             Map<String, Object> extraClaims,
-            UserDetails userDetails
+            UserDetails userDetails,
+            long expiration
     ) {
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 24))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
