@@ -5,6 +5,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +18,12 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
-    private static final String SECRET_KEY = "Gd22DUtB7BDY/1ssf5Pa0vpGwwee1cBxk0jjESAtzPjy6ngl+VUHugiwGIBy0s3wkCk7Aj8yosatqFNHy2nLBS66gr1nCU9H2+ot1PVK96jSnHaelaOVtJ2UHJpl1W/4KGCJlft1NCFbqdM+rkSWkgtjsxXihLs8lKthx1DBgwDTuoaEmryxfSNBNQ5UVt73iv6ZkIaqTE3NUwvK1Qi2FnuJDVv6RRnQqb9jE5KWsbTkWctGan7HQiWD31skxftPqxLCM7JONZO2WXI20ktQsbK5oGbI00El6gewW8MhQ19MOhPU69LTVS8LHb0Ku5vaWajE7ZXlif34n0h2HMN7BY+XneCTKUm4p9fjarauPcM=";
-
-    private static final long AccessTokenExpiration =  1000; // 1 day
-    private static final long RefreshTokenExpiration =  604800000; // 7 days
+    @Value("${secret.key}")
+    private String SECRET_KEY;
+    @Value("${token.access.expiration}")
+    private long AccessTokenExpiration;
+    @Value("${token.refresh.expiration}")
+    private long RefreshTokenExpiration;
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
