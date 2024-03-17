@@ -1,8 +1,8 @@
 package com.example.sec.service;
 
-import com.example.sec.controller.AuthenticationRequest;
-import com.example.sec.controller.AuthenticationResponse;
-import com.example.sec.controller.RegisterRequest;
+import com.example.sec.dto.authentication.AuthenticationRequest;
+import com.example.sec.dto.authentication.AuthenticationResponse;
+import com.example.sec.dto.register.RegisterRequest;
 import com.example.sec.model.Role;
 import com.example.sec.model.User;
 import com.example.sec.repository.UserRepository;
@@ -13,10 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -43,28 +40,22 @@ public class AuthenticationService {
 
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
-        return AuthenticationResponse.builder()
-                .accessJwtToken(jwtToken)
-                .refreshJwtToken(refreshToken)
-                .build();
+        return new AuthenticationResponse(jwtToken, refreshToken);
     }
 
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
+                        request.email(),
+                        request.password()
                 )
         );
 
-        var user = userRepository.findByEmail(request.getEmail())
+        var user = userRepository.findByEmail(request.email())
                 .orElseThrow();
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
-        return AuthenticationResponse.builder()
-                .accessJwtToken(jwtToken)
-                .refreshJwtToken(refreshToken)
-                .build();
+        return new AuthenticationResponse(jwtToken, refreshToken);
     }
 
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -81,10 +72,8 @@ public class AuthenticationService {
             if(jwtService.isTokenValid(refreshToken, userDetails)) {
                 var accessToken = jwtService.generateToken(userDetails);
 
-                AuthenticationResponse authenticationResponse = AuthenticationResponse.builder()
-                        .accessJwtToken(accessToken)
-                        .refreshJwtToken(refreshToken)
-                        .build();
+                AuthenticationResponse authenticationResponse =
+                        new AuthenticationResponse(accessToken, refreshToken);
 
                 new ObjectMapper().writeValue(response.getOutputStream(), authenticationResponse);
             }
